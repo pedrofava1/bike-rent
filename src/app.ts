@@ -7,7 +7,11 @@ export class App {
   bikes: Bike[] = []
   rents: Rent[] = []
 
-  addUser(user: User) {
+  findUser(email: string): User | undefined {
+    return this.users.find(user => {return user.email === email})
+  }
+
+  registerUser(user: User) {
     for (const rUser of this.users) {
       if(rUser.email === user.email) {
         throw new Error ('User already registered')
