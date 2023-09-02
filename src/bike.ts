@@ -1,13 +1,13 @@
 export class Bike {
   constructor(
-    name: string,
-    type: string,
-    bodySize: number,
-    maxLoad: number,
-    rate: number,
-    description: string,
-    ratings: number,
-    imageUrls: string[],
-    id?: string
+    public name: string,
+    public type: string,
+    public bodySize: number,
+    public maxLoad: number,
+    public rate: number,
+    public description: string,
+    public ratings: number,
+    public imageUrls: string[],
+    public id: string,
   ) {}
 }

@@ -10,10 +10,10 @@ export class Rent {
     public dateReturned?: Date
   ) {}
 
-  static create(rents: Rent[], bike: Bike, user: User, startDate: Date, endDate: Date) {
+  static create(rents: Rent[], bike: Bike, user: User, startDate: Date, endDate: Date): Rent {
     const canCreate = Rent.canRent(rents, startDate, endDate)
       if(canCreate) {
-        return new Rent(bike, user, startDate,endDate)
+        return new Rent(bike, user, startDate, endDate)
       }
       throw new Error('Overlapping dates for this rent.')
     }
@@ -26,4 +26,8 @@ export class Rent {
   }
 }
 
+// let startCollision = rents.some(r => r.dateTo >= startDate && r.dateFrom <= endDate)
+//     let endCollision = rents.some(r => r.dateTo >= startDate && r.dateFrom <= endDate)
+//     let dateAvailable = startCollision === false && endCollision === false
 
+//     return dateAvailable

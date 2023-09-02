@@ -3,9 +3,12 @@ import { Bike } from "./src/bike"
 import { Rent } from "./src/rent"
 import { User } from "./src/user"
 
-const bike = new Bike('bikel', 'mountain', 30, 100, 100.5, 'my desc', 5, [])
-const user = new User ('teste', 'teste@mail.com', '1234')
+const app = new App()
 
+// app.registerBike(bike)
+// console.log(bike);
+
+//DATES
 const today = new Date()
 const twoDaysLater = new Date()
 twoDaysLater.setDate(twoDaysLater.getDate() + 2)
@@ -14,22 +17,28 @@ tomorrow.setDate(tomorrow.getDate() + 1)
 const twoDaysAfterTomorrow = new Date()
 twoDaysAfterTomorrow.setDate(tomorrow.getDate() + 2)
 
-const rent1 = Rent.create([], bike, user, today, twoDaysLater)
-// console.log(rent1);
-// const rent2 = Rent.create([rent1], bike, user, tomorrow, twoDaysAfterTomorrow)
+const user = new User('Joao', 'joao@mail.com', '1234')
+app.registerUser(user)
+// console.log(user)
 
-// console.log(rent2);
+const user1 = new User('Pedro', 'pedro@mail.com', '1234')
+app.registerUser(user1)
+// app.registerUser(user1)
+// console.log(user1);
 
-const app = new App()
-const ul = new User('Joao', 'joao@email.com', '1234')
-app.registerUser(ul)
-// console.log(ul)
+// console.log(app.findUser('pedro@mail.com'));
+// app.removeUser('pedro@mail.com')
+// console.log(app.users);
 
-const ul1 = new User('Pedro', 'pedro@mail.com', '1234')
-app.registerUser(ul1)
-// console.log(ul1);
+const bike = new Bike('bikel', 'bmx', 30, 100, 100.5, 'my desc', 5, [], '1')
+app.registerBike(bike)
+// const bike1 = new Bike('bikel', 'bmx', 30, 100, 100.5, 'my desc', 5, [], '2')
+// app.registerBike(bike1)
 
-console.log(app.findUser('pedro@mail.com'));
+app.rentBike(bike, 'pedro@mail.com', today, twoDaysLater)
+// app.rentBike(bike, 'joao@mail.com', today, twoDaysLater)
+// console.log(app.rents);
 
-// app.addUser(ul1)
-
+app.returnBike(bike, 'pedro@mail.com', twoDaysLater)
+console.log(app.rents);
+// console.log(JSON.stringify(app, undefined, 2));
