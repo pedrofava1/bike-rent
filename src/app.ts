@@ -9,11 +9,12 @@ export class App {
   rents: Rent[] = []
 
   returnBike(bike: Bike, userEmail: string, dateReturn: Date ): void{
+    const today = new Date()
     let rUser = this.users.find(u =>u.email === userEmail)
       if(rUser == undefined)
         throw new Error('User is not registered')
       
-    let rBike = this.rents.find(b =>b.bike === bike)
+    let rBike = this.rents.find(b =>b.bike === bike && b.dateFrom < today)
     if(rBike != undefined) {
       if(rBike.user.email != userEmail)
         throw new Error('User different from who rent')
