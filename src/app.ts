@@ -8,12 +8,7 @@ export class App {
   bikes: Bike[] = []
   rents: Rent[] = []
 
-  // register bike - DONE
-  // remove user - DONE
-  // rent bike - DONE
-  // return bike
-
-  returnBike(bike: Bike, userEmail: string, dateReturn: Date ){
+  returnBike(bike: Bike, userEmail: string, dateReturn: Date ): void{
     let rUser = this.users.find(u =>u.email === userEmail)
       if(rUser == undefined)
         throw new Error('User is not registered')
@@ -23,7 +18,7 @@ export class App {
       if(rBike.user.email != userEmail)
         throw new Error('User different from who rent')
 
-      rBike.dateReturned = dateReturn
+    rBike.dateReturned = dateReturn
     }
     
     if(rBike = undefined)
@@ -31,14 +26,14 @@ export class App {
   }
 
   rentBike(bike: Bike, userEmail: string, startDate: Date, endDate: Date): Rent {
-      if(bike == undefined)
-        throw new Error('Bike is not registered')
+    if(bike == undefined)
+      throw new Error('Bike is not registered')
 
     let rUser = this.users.find(u =>u.email === userEmail)
       if(rUser == undefined)
         throw new Error('User is not registered')
     
-    let bikeVet = this.rents.filter(t => t.bike === bike)
+    let bikeVet = this.rents.filter(t => t.bike === bike && !t.dateReturned)
     let newRent = Rent.create(bikeVet, bike, rUser, startDate, endDate) 
     this.rents.push(newRent)
 
@@ -47,19 +42,18 @@ export class App {
 
   removeUser(email: String): void {
     let iU = this.users.findIndex(u => u.email === email)
-    this.users.splice(iU, 1)
-
     if(iU == -1)
       throw new Error('Email does not exist in database')
+    
+    this.users.splice(iU, 1)
   }
+
   
-  registerBike(bike: Bike) {
-    for (const rBike of this.bikes) {
-      if (rBike.id === bike.id) {
-        throw new Error('Bike already registered')
-      }
-    }
+  registerBike(bike: Bike): string {
+    const newId = crypto.randomUUID()
+    bike.id = newId
     this.bikes.push(bike)
+    return newId
   }
 
   findUser(email: string): User | undefined {
