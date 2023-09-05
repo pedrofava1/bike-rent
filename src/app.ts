@@ -2,11 +2,37 @@ import { Bike } from "./bike";
 import { Rent } from "./rent";
 import { User } from "./user";
 import  crypto from 'crypto'
+import bcrypt from 'bcrypt'
 
 export class App {
   users: User[] = []
   bikes: Bike[] = []
   rents: Rent[] = []
+
+  listUsers() {
+    console.log(this.users);
+  }
+
+  listBikes() {
+    console.log(this.bikes);
+  }
+
+  listRents() {
+    console.log(this.rents);
+  }
+
+  async userAuthenticate(userEmail: string, userPassword: string ): Promise<User> {
+    const rUser = this.users.find(u => u.email === userEmail)
+    if(rUser === undefined)
+      throw new Error('User does not exist')
+    const hashedPassword = rUser.password
+
+    const passMatched = await bcrypt.compare(userPassword, hashedPassword)
+    if(!passMatched)
+      throw new Error('Password does not match')
+
+    return rUser
+  }
 
   returnBike(bike: Bike, userEmail: string, dateReturn: Date ): void{
     const today = new Date()
@@ -18,8 +44,8 @@ export class App {
     if(rBike != undefined) {
       if(rBike.user.email != userEmail)
         throw new Error('User different from who rent')
-
     rBike.dateReturned = dateReturn
+
     }
     
     if(rBike = undefined)
@@ -61,13 +87,18 @@ export class App {
     return this.users.find(user => {return user.email === email})
   }
 
-  registerUser(user: User) {
+  async registerUser(user: User): Promise<User> {
+    const saltRounds = 10
     for (const rUser of this.users) {
       if(rUser.email === user.email) {
         throw new Error ('User already registered')
       }
     }
+
     user.id = crypto.randomUUID()
+    user.password = await bcrypt.hash(user.password, 10)
     this.users.push(user)
+
+    return user
   }
 }
