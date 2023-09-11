@@ -1,9 +1,9 @@
 import { App } from './src/app'
 import { Bike } from './src/bike'
-import { Rent } from './src/rent'
 import { User } from './src/user'
+import { Rent } from './src/rent'
+import sinon from 'sinon'
 
-import bcrypt from 'bcrypt'
 
 async function run() {
   const app = new App()
@@ -15,17 +15,19 @@ async function run() {
   const today = new Date()
   const twoDaysLater = new Date()
   twoDaysLater.setDate(twoDaysLater.getDate() + 2)
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const twoDaysAfterTomorrow = new Date()
-  twoDaysAfterTomorrow.setDate(tomorrow.getDate() + 2)
+  // const tomorrow = new Date()
+  // tomorrow.setDate(tomorrow.getDate() + 1)
+  // const twoDaysAfterTomorrow = new Date()
+  // twoDaysAfterTomorrow.setDate(tomorrow.getDate() + 2)
+
+  const clock = sinon.useFakeTimers();
   
   // const user = new User('Joao', 'joao@mail.com', '1234')
   // app.registerUser(user)
   const user1 = new User('Pedro', 'pedro@mail.com', '12345')
   await app.registerUser(user1)
+  await app.userAuthenticate('pedro@mail.com', '12345')
   // console.log(app.users);
-  // app.registerUser(user1)
   // console.log(user1);
   
   // console.log(app.findUser('pedro@mail.com'));
@@ -37,18 +39,16 @@ async function run() {
   // const bike1 = new Bike('bikel', 'bmx', 30, 100, 100.5, 'my desc', 5, [], '2')
   // app.registerBike(bike1)
   
-  app.rentBike(bike, 'pedro@mail.com', today, twoDaysLater)
-  // app.rentBike(bike, 'joao@mail.com', today, twoDaysLater)
-  // console.log(app.rents);
+  app.rentBike(bike, 'pedro@mail.com')
+  // app.rentBike(bike, 'joao@mail.com')
+  console.log(app.listBikes());
   
-  app.returnBike(bike, 'pedro@mail.com', twoDaysLater)
-  // console.log(app.rents);
+  app.returnBike(bike, 'pedro@mail.com', twoDaysLater) //criar lib fake timer
   // console.log(JSON.stringify(app, undefined, 2));
+  
+  
+  console.log(app.listRents());
+  // console.log(app.listUsers());
 
-  console.log(await app.userAuthenticate('pedro@mail.com', '1234'));
-
-  //  console.log(app.users);
 }
-
-
 run();

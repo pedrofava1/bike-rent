@@ -1,8 +1,9 @@
 import { Bike } from "./bike";
 import { Rent } from "./rent";
 import { User } from "./user";
-import  crypto from 'crypto'
+import crypto from 'crypto'
 import bcrypt from 'bcrypt'
+import sinon from 'sinon'
 
 export class App {
   users: User[] = []
@@ -10,58 +11,61 @@ export class App {
   rents: Rent[] = []
 
   listUsers() {
-    console.log(this.users);
+   return this.users.slice()
   }
 
   listBikes() {
-    console.log(this.bikes);
+    return this.bikes.slice()
   }
 
   listRents() {
-    console.log(this.rents);
+    return this.rents.slice()
   }
 
-  async userAuthenticate(userEmail: string, userPassword: string ): Promise<User> {
+  async userAuthenticate(userEmail: string, userPassword: string ): Promise<boolean> {
     const rUser = this.users.find(u => u.email === userEmail)
     if(rUser === undefined)
       throw new Error('User does not exist')
     const hashedPassword = rUser.password
 
     const passMatched = await bcrypt.compare(userPassword, hashedPassword)
-    if(!passMatched)
-      throw new Error('Password does not match')
-
-    return rUser
-  }
-
-  returnBike(bike: Bike, userEmail: string, dateReturn: Date ): void{
-    const today = new Date()
-    let rUser = this.users.find(u =>u.email === userEmail)
-      if(rUser == undefined)
-        throw new Error('User is not registered')
-      
-    let rBike = this.rents.find(b =>b.bike === bike && b.dateFrom < today)
-    if(rBike != undefined) {
-      if(rBike.user.email != userEmail)
-        throw new Error('User different from who rent')
-    rBike.dateReturned = dateReturn
-
+    if(!passMatched){
+      console.log("Login has failed")
+      return false
     }
-    
-    if(rBike = undefined)
-      throw new Error('Bike is not rent')
+
+    console.log("Login has been successful");
+    return true
   }
 
-  rentBike(bike: Bike, userEmail: string, startDate: Date, endDate: Date): Rent {
+  returnBike(bike: Bike, userEmail: string, dateReturn: Date): void{
     if(bike == undefined)
       throw new Error('Bike is not registered')
+    if(bike.isAvailable === true)
+      throw new Error('Bike is not rented')
+    const rUser = this.users.find(u =>u.email === userEmail)
+    if(rUser == undefined)
+      throw new Error('Rent Error: User is not registered')
+
+    const rent = this.rents.find(r => r.bike.id === bike.id && r.user.email === userEmail && r.end === undefined)
+    if(rent == undefined)
+      throw new Error('Rent Error: Rent does not exist')
+    rent.end = dateReturn
+    this.rents.push(rent)
+  }
+
+  rentBike(bike: Bike, userEmail: string): Rent {
+    if(bike == undefined)
+      throw new Error('Bike is not registered')
+    if(bike.isAvailable === false)
+      throw new Error('Bike is not available')
 
     let rUser = this.users.find(u =>u.email === userEmail)
       if(rUser == undefined)
-        throw new Error('User is not registered')
-    
-    let bikeVet = this.rents.filter(t => t.bike === bike && !t.dateReturned)
-    let newRent = Rent.create(bikeVet, bike, rUser, startDate, endDate) 
+        throw new Error('Rent Error: User is not registered')
+      
+    let newRent = new Rent(bike, rUser) 
+    bike.isAvailable = false
     this.rents.push(newRent)
 
     return newRent
@@ -98,6 +102,7 @@ export class App {
     user.id = crypto.randomUUID()
     user.password = await bcrypt.hash(user.password, 10)
     this.users.push(user)
+    // console.log(this.listUsers());
 
     return user
   }
