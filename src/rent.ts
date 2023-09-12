@@ -8,5 +8,6 @@ export class Rent {
     public bike: Bike,
     public user: User,
     public start: Date = new Date(),
+    public value: number = 0
   ) {}
 }

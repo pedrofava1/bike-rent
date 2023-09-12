@@ -9,25 +9,29 @@ async function run() {
  
   //DATES
   const today = new Date()
-  const twoDaysLater = new Date()
-  twoDaysLater.setDate(twoDaysLater.getDate() + 2)
-  const clock = sinon.useFakeTimers();
-
+  const tomorrow = new Date()
+  tomorrow.setDate(today.getDate() + 1)
   
   //USER
   const user1 = new User('Pedro', 'pedro@mail.com', '12345')
   await app.registerUser(user1)
-  await app.userAuthenticate('pedro@mail.com', '12345')
+
+  const user2 = new User('Joao', 'joao@mail.com', '12345')
+  await app.registerUser(user2)
+  // await app.userAuthenticate('pedro@mail.com', '12345')
 
   //BIKE
   const bike = new Bike('bikel', 'bmx', 30, 100, 100.5, 'my desc', 5, [], '1')
   app.registerBike(bike)
+  const bike1 = new Bike('bikel', 'bmx', 30, 100, 100.5, 'my desc', 5, [], '1')
+  app.registerBike(bike1)
   
   //RENT
   app.rentBike(bike, 'pedro@mail.com')
+  app.rentBike(bike1, 'joao@mail.com')
   
   //RETURN
-  app.returnBike(bike, 'pedro@mail.com', twoDaysLater) //criar lib fake timer
+  app.returnBike(bike, 'pedro@mail.com', tomorrow) //criar lib fake timer
   
   //LIST ARRAYS
   // console.log(app.listBikes());

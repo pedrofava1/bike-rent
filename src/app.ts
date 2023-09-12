@@ -38,7 +38,7 @@ export class App {
     return true
   }
 
-  returnBike(bike: Bike, userEmail: string, dateReturn: Date): void{
+  returnBike(bike: Bike, userEmail: string, dateReturn: Date): Number{
     if(bike == undefined)
       throw new Error('Bike is not registered')
     if(bike.isAvailable === true)
@@ -51,7 +51,19 @@ export class App {
     if(rent == undefined)
       throw new Error('Rent Error: Rent does not exist')
     rent.end = dateReturn
+    
+    let diffTime = Math.abs(rent.end.getTime() - rent.start.getTime()) / (1000 * 60) // diffTime in minutes
+    diffTime = Math.round(diffTime * 100) / 100 // round to 2 decimal places
+
+    rent.value = (diffTime * 0.5) // 0.5 reais per minute
+    rent.value = Math.round(rent.value * 100) / 100 // round to 2 decimal places
+
+    console.log("The value of the rent is: " + rent.value + " reais");
+
+    bike.isAvailable = true
     this.rents.push(rent)
+
+    return rent.value
   }
 
   rentBike(bike: Bike, userEmail: string): Rent {
@@ -67,6 +79,7 @@ export class App {
     let newRent = new Rent(bike, rUser) 
     bike.isAvailable = false
     this.rents.push(newRent)
+    console.log("The rent was successful");
 
     return newRent
   }
