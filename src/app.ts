@@ -22,6 +22,14 @@ export class App {
     return this.rents.slice()
   }
 
+  getBikeLocation(bikeId: String, lat: number, lon: number) {
+    let rBike = this.bikes.find(b => b.id === bikeId)
+    if(rBike === undefined){
+      throw new Error('Bike does not exist')
+    }
+    rBike.coords.push(lat, lon)
+  }
+
   async userAuthenticate(userEmail: string, userPassword: string ): Promise<boolean> {
     const rUser = this.users.find(u => u.email === userEmail)
     if(rUser === undefined)
