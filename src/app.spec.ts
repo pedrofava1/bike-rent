@@ -45,8 +45,6 @@ describe('App', () => {
     it('should verify if bike is registered by the id',() => {
         const app = new App()
         const bikeId = '1231'
-        if(bikeId === undefined)
-            throw new Error('Bike id is undefined')
     
         expect(() => app.findBikeById(bikeId)).toThrowError('Bike does not exist in data base')
     })
