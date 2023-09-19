@@ -1,6 +1,7 @@
 import { Bike } from "./bike";
 import { Rent } from "./rent";
 import { User } from "./user";
+import { Location } from "./location";
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
 import sinon from 'sinon'
@@ -22,14 +23,6 @@ export class App {
     return this.rents.slice()
   }
 
-  getBikeLocation(bikeId: String, lat: number, lon: number) {
-    let rBike = this.bikes.find(b => b.id === bikeId)
-    if(rBike === undefined){
-      throw new Error('Bike does not exist')
-    }
-    rBike.coords.push(lat, lon)
-  }
-
   async userAuthenticate(userEmail: string, userPassword: string ): Promise<boolean> {
     const rUser = this.users.find(u => u.email === userEmail)
     if(rUser === undefined)
@@ -46,7 +39,25 @@ export class App {
     return true
   }
 
-  returnBike(bike: Bike, userEmail: string, dateReturn: Date): Number{
+  rentBike(bike: Bike, userEmail: string): void {
+    if(bike == undefined)
+      throw new Error('Bike is not registered')
+    if(bike.isAvailable === false)
+      throw new Error('Unavailable bike')
+
+    const rUser = this.users.find(u =>u.email === userEmail)
+      if(rUser == undefined)
+        throw new Error('Rent Error: User is not registered')
+      
+    bike.isAvailable = false
+    const newRent = new Rent(bike, rUser, new Date()) 
+    this.rents.push(newRent)
+    console.log("The rent was successful");
+  }
+  
+  returnBike(bike: Bike, userEmail: string): Number{
+    const now = new Date()
+
     if(bike == undefined)
       throw new Error('Bike is not registered')
     if(bike.isAvailable === true)
@@ -58,38 +69,14 @@ export class App {
     const rent = this.rents.find(r => r.bike.id === bike.id && r.user.email === userEmail && r.end === undefined)
     if(rent == undefined)
       throw new Error('Rent Error: Rent does not exist')
-    rent.end = dateReturn
     
-    let diffTime = Math.abs(rent.end.getTime() - rent.start.getTime()) / (1000 * 60) // diffTime in minutes
-    diffTime = Math.round(diffTime * 100) / 100 // round to 2 decimal places
-
-    rent.value = (diffTime * 0.5) // 0.5 reais per minute
-    rent.value = Math.round(rent.value * 100) / 100 // round to 2 decimal places
-
-    console.log("The value of the rent is: " + rent.value + " reais");
-
-    bike.isAvailable = true
+    rent.end = now
+    rent.bike.isAvailable = true
+    const hours = diffHours(rent.end, rent.start)
+    
     this.rents.push(rent)
 
-    return rent.value
-  }
-
-  rentBike(bike: Bike, userEmail: string): Rent {
-    if(bike == undefined)
-      throw new Error('Bike is not registered')
-    if(bike.isAvailable === false)
-      throw new Error('Bike is not available')
-
-    let rUser = this.users.find(u =>u.email === userEmail)
-      if(rUser == undefined)
-        throw new Error('Rent Error: User is not registered')
-      
-    let newRent = new Rent(bike, rUser) 
-    bike.isAvailable = false
-    this.rents.push(newRent)
-    console.log("The rent was successful");
-
-    return newRent
+    return rent.bike.rate * hours
   }
 
   removeUser(email: String): void {
@@ -99,7 +86,6 @@ export class App {
     
     this.users.splice(iU, 1)
   }
-
   
   registerBike(bike: Bike): string {
     const newId = crypto.randomUUID()
@@ -108,8 +94,16 @@ export class App {
     return newId
   }
 
-  findUser(email: string): User | undefined {
+  findUserByEmail(email: string): User | undefined {
     return this.users.find(user => {return user.email === email})
+  }
+  
+  findBikeById(bikeId: String): Bike | undefined {
+    const rBike = this.bikes.find(b => b.id === bikeId)
+    if(rBike === undefined) 
+      throw new Error('Bike does not exist in data base')
+    
+    return rBike
   }
 
   async registerUser(user: User): Promise<User> {
@@ -123,8 +117,24 @@ export class App {
     user.id = crypto.randomUUID()
     user.password = await bcrypt.hash(user.password, 10)
     this.users.push(user)
-    // console.log(this.listUsers());
 
     return user
   }
+
+  moveBikeTo(bikeId: string, location: Location): void {
+    const bike = this.bikes.find(b => b.id === bikeId)
+    if(bike === undefined) {
+      throw new Error('Bike does not exist')
+    }
+    
+    bike.position.latitude = location.latitude
+    bike.position.longitude = location.longitude
+}
+  
+}
+
+function diffHours(dt2: Date, dt1: Date) {
+  var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+  diff /= (60 * 60);
+  return Math.abs(diff);
 }

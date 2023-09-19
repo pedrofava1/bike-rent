@@ -7,7 +7,6 @@ export class Rent {
   constructor(
     public bike: Bike,
     public user: User,
-    public start: Date = new Date(),
-    public value: number = 0
+    public start: Date
   ) {}
 }
