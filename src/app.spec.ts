@@ -1,6 +1,6 @@
 import { App } from "./app"
-import { Bike } from "./bike"
 import { User } from "./user"
+import { Bike } from "./bike"
 import { Location } from "./location"
 
 import { BikeNotFoundError } from "./errors/BikeNotFoundError"
@@ -9,9 +9,10 @@ import { AuthenticationFailed } from "./errors/AuthenticationFailed"
 import { UserNotFoundError } from "./errors/UserNotFoundError"
 import { UserAlreadyExists } from "./errors/UserAlreadyExists"
 import { RentDoesNotExist } from "./errors/RentDoesNotExist"
+import { EmailDoesNotExist } from "./errors/EmailDoesNotExist"
+import { BikeAlreadyExists } from "./errors/BikeAlreadyExists"
 
 import sinon from "sinon"
-import { EmailDoesNotExist } from "./errors/EmailDoesNotExist"
 
 describe('App', () => {
     it('should correctly calculate rent amount', async () => {
@@ -123,5 +124,13 @@ describe('App', () => {
         const app = new App()
 
         expect(() => app.findUserByEmail('fake-email')).toThrow(UserNotFoundError)
+    })
+
+    it('should throw bike already exists when trying to register a bike that is already registered', () => {
+        const app = new App()
+        const bike = new Bike('bikel', 'bmx', 30, 100, 100.0, 'my desc', 5, [])
+        app.registerBike(bike)
+
+        expect(() => app.registerBike(bike)).toThrow(BikeAlreadyExists)
     })
 })

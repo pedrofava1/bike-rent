@@ -1,6 +1,6 @@
+import { User } from "./user";
 import { Bike } from "./bike";
 import { Rent } from "./rent";
-import { User } from "./user";
 import { Location } from "./location";
 
 import crypto from 'crypto'
@@ -13,6 +13,7 @@ import { UserAlreadyExists } from "./errors/UserAlreadyExists";
 import { AuthenticationFailed } from "./errors/AuthenticationFailed";
 import { RentDoesNotExist } from "./errors/RentDoesNotExist";
 import { EmailDoesNotExist } from "./errors/EmailDoesNotExist";
+import { BikeAlreadyExists } from "./errors/BikeAlreadyExists";
 
 export class App {
   users: User[] = []
@@ -88,7 +89,10 @@ export class App {
     this.users.splice(iU, 1)
   }
   
-  registerBike(bike: Bike): string { // DO NOT NEED TEST
+  registerBike(bike: Bike): string { // TEST DONE
+    const bikeExists = this.bikes.some(b => bike === b)
+      if(bikeExists) throw new BikeAlreadyExists()
+      
     const newId = crypto.randomUUID()
     bike.id = newId
     this.bikes.push(bike)
