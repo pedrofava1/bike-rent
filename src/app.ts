@@ -2,9 +2,17 @@ import { Bike } from "./bike";
 import { Rent } from "./rent";
 import { User } from "./user";
 import { Location } from "./location";
+
 import crypto from 'crypto'
 import bcrypt from 'bcrypt'
-import sinon from 'sinon'
+
+import { BikeNotFoundError } from "./errors/BikeNotFoundError";
+import { UnavailableBikeError } from "./errors/UnavailableBikeError";
+import { UserNotFoundError } from "./errors/UserNotFoundError";
+import { UserAlreadyExists } from "./errors/UserAlreadyExists";
+import { AuthenticationFailed } from "./errors/AuthenticationFailed";
+import { RentDoesNotExist } from "./errors/RentDoesNotExist";
+import { EmailDoesNotExist } from "./errors/EmailDoesNotExist";
 
 export class App {
   users: User[] = []
@@ -23,114 +31,92 @@ export class App {
     return this.rents.slice()
   }
 
-  async userAuthenticate(userEmail: string, userPassword: string ): Promise<boolean> {
-    const rUser = this.users.find(u => u.email === userEmail)
-    if(rUser === undefined)
-      throw new Error('User does not exist')
-    const hashedPassword = rUser.password
-
-    const passMatched = await bcrypt.compare(userPassword, hashedPassword)
-    if(!passMatched){
-      console.log("Login has failed")
-      return false
+  async registerUser(user: User): Promise<User> { //TEST DONE
+    for (const rUser of this.users) {
+      if(rUser.email === user.email) {
+        throw new UserAlreadyExists()
+      }
     }
 
-    console.log("Login has been successful");
-    return true
+    user.password = await bcrypt.hash(user.password, 10)
+    user.id = crypto.randomUUID()
+    this.users.push(user)
+
+    return user
   }
 
-  rentBike(bike: Bike, userEmail: string): void {
-    if(bike == undefined)
-      throw new Error('Bike is not registered')
-    if(bike.isAvailable === false)
-      throw new Error('Unavailable bike')
+  async userAuthenticate(userEmail: string, userPassword: string ): Promise<User> { //TEST DONE
+    const user = this.findUserByEmail(userEmail)
 
-    const rUser = this.users.find(u =>u.email === userEmail)
-      if(rUser == undefined)
-        throw new Error('Rent Error: User is not registered')
-      
+    const passMatched = await bcrypt.compare(userPassword, user.password)
+    if(!passMatched) 
+      throw new AuthenticationFailed()
+    
+    return user
+  }
+
+  rentBike(bikeId: string | undefined, userEmail: string): Rent { //TEST DONE
+    if (!bikeId) 
+      throw new BikeNotFoundError()
+    const bike = this.findBikeById(bikeId)
+    if(!bike.isAvailable)
+      throw new UnavailableBikeError()
+
+    const user = this.findUserByEmail(userEmail)
     bike.isAvailable = false
-    const newRent = new Rent(bike, rUser, new Date()) 
+    const newRent = new Rent(bike, user, new Date()) 
     this.rents.push(newRent)
-    console.log("The rent was successful");
+
+    return newRent
   }
   
-  returnBike(bike: Bike, userEmail: string): Number{
+  returnBike(bikeId: string | undefined, userEmail: string): Number{ //TEST DONE
     const now = new Date()
-
-    if(bike == undefined)
-      throw new Error('Bike is not registered')
-    if(bike.isAvailable === true)
-      throw new Error('Bike is not rented')
-    const rUser = this.users.find(u =>u.email === userEmail)
-    if(rUser == undefined)
-      throw new Error('Rent Error: User is not registered')
-
-    const rent = this.rents.find(r => r.bike.id === bike.id && r.user.email === userEmail && r.end === undefined)
-    if(rent == undefined)
-      throw new Error('Rent Error: Rent does not exist')
-    
-    rent.end = now
-    rent.bike.isAvailable = true
-    const hours = diffHours(rent.end, rent.start)
-    
-    this.rents.push(rent)
-
-    return rent.bike.rate * hours
+        const rent = this.rents.find(rent => rent.bike.id === bikeId && rent.user.email === userEmail && !rent.end)
+        if (!rent) throw new RentDoesNotExist()
+        rent.end = now
+        rent.bike.isAvailable = true
+        const hours = diffHours(rent.end, rent.start)
+        return hours * rent.bike.rate
   }
 
-  removeUser(email: String): void {
+  removeUser(email: String): void { //TEST DONE
     let iU = this.users.findIndex(u => u.email === email)
     if(iU == -1)
-      throw new Error('Email does not exist in database')
+      throw new EmailDoesNotExist()
     
     this.users.splice(iU, 1)
   }
   
-  registerBike(bike: Bike): string {
+  registerBike(bike: Bike): string { // DO NOT NEED TEST
     const newId = crypto.randomUUID()
     bike.id = newId
     this.bikes.push(bike)
     return newId
   }
 
-  findUserByEmail(email: string): User | undefined {
-    return this.users.find(user => {return user.email === email})
-  }
-  
-  findBikeById(bikeId: String): Bike | undefined {
-    const rBike = this.bikes.find(b => b.id === bikeId)
-    if(rBike === undefined) 
-      throw new Error('Bike does not exist in data base')
+  findUserByEmail(userEmail: string): User { // TEST DONE
+    const user = this.users.find(u => u.email === userEmail)
+    if(!user) throw new UserNotFoundError()
     
-    return rBike
-  }
-
-  async registerUser(user: User): Promise<User> {
-    const saltRounds = 10
-    for (const rUser of this.users) {
-      if(rUser.email === user.email) {
-        throw new Error ('User already registered')
-      }
-    }
-
-    user.id = crypto.randomUUID()
-    user.password = await bcrypt.hash(user.password, 10)
-    this.users.push(user)
-
     return user
   }
-
-  moveBikeTo(bikeId: string, location: Location): void {
+  
+  findBikeById(bikeId: String): Bike { // TEST DONE
     const bike = this.bikes.find(b => b.id === bikeId)
-    if(bike === undefined) {
-      throw new Error('Bike does not exist')
-    }
+    if(!bike) throw new BikeNotFoundError()
+    
+    return bike
+  }
+
+  moveBikeTo(bikeId: string, location: Location): Location { //TEST DONE
+    const bike = this.findBikeById(bikeId)
     
     bike.position.latitude = location.latitude
     bike.position.longitude = location.longitude
-}
-  
+
+    return bike.position
+  }
 }
 
 function diffHours(dt2: Date, dt1: Date) {

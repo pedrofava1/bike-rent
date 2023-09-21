@@ -6,9 +6,10 @@
 
 // async function run() {
 //   const clock = sinon.useFakeTimers();
-//     const app = new App()
-//     const user1 = new User('Pedro', 'pedro@mail.com', '1234')
-//     await app.registerUser(user1)
+    // const app = new App()
+    // const user = new User('Pedro', 'pedro@mail.com', '1234')
+    // await app.registerUser(user)
+    // await app.userAuthenticate('pedro@mail.com', '1234')
 //     const bike = new Bike('caloi mountainbike', 'mountain bike', 30, 100, 100.5, 'my desc', 5, [], '1')
 //     app.registerBike(bike)
 //     console.log('Bike disponível: ', bike.isAvailable)
