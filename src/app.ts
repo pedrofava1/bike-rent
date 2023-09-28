@@ -14,113 +14,92 @@ import { AuthenticationFailed } from "./errors/AuthenticationFailed";
 import { RentDoesNotExist } from "./errors/RentDoesNotExist";
 import { EmailDoesNotExist } from "./errors/EmailDoesNotExist";
 import { BikeAlreadyExists } from "./errors/BikeAlreadyExists";
+import { UserRepo } from "./ports/user-repo";
+import { BikeRepo } from "./ports/bike-repo";
+import { RentRepo } from "./ports/rent-repo";
 
 export class App {
-  users: User[] = []
-  bikes: Bike[] = []
-  rents: Rent[] = []
+  crypt: any;
+  constructor(
+    readonly userRepo: UserRepo,
+    readonly bikeRepo: BikeRepo,
+    readonly rentRepo: RentRepo
+) {}
 
-  listUsers() {
-   return this.users.slice()
+  async listUsers(): Promise<User[]> {
+    return await this.userRepo.list()
   }
 
-  listBikes() {
-    return this.bikes.slice()
+  async listBikes(): Promise<Bike[]> {
+    return await this.bikeRepo.list()
   }
 
-  listRents() {
-    return this.rents.slice()
-  }
-
-  async registerUser(user: User): Promise<User> { //TEST DONE
-    for (const rUser of this.users) {
-      if(rUser.email === user.email) {
-        throw new UserAlreadyExists()
-      }
+  async registerUser(user: User): Promise<string> {
+    if (await this.userRepo.find(user.email)) {
+      throw new UserAlreadyExists()
     }
+    const encryptedPassword = await this.crypt.encrypt(user.password)
+    user.password = encryptedPassword
+    return await this.userRepo.add(user)
+}
 
-    user.password = await bcrypt.hash(user.password, 10)
-    user.id = crypto.randomUUID()
-    this.users.push(user)
-
-    return user
+  async authenticate(userEmail: string, password: string): Promise<boolean> {
+    const user = await this.findUser(userEmail)
+    return await this.crypt.compare(password, user.password)
   }
 
-  async userAuthenticate(userEmail: string, userPassword: string ): Promise<User> { //TEST DONE
-    const user = this.findUserByEmail(userEmail)
-
-    const passMatched = await bcrypt.compare(userPassword, user.password)
-    if(!passMatched) 
-      throw new AuthenticationFailed()
-    
-    return user
-  }
-
-  rentBike(bikeId: string | undefined, userEmail: string): Rent { //TEST DONE
-    if (!bikeId) 
-      throw new BikeNotFoundError()
-    const bike = this.findBikeById(bikeId)
-    if(!bike.isAvailable)
-      throw new UnavailableBikeError()
-
-    const user = this.findUserByEmail(userEmail)
+  async rentBike(bikeId: string, userEmail: string): Promise<string> {
+    const bike = await this.findBike(bikeId)
+    if (!bike.isAvailable) {
+        throw new UnavailableBikeError()
+    }
+    const user = await this.findUser(userEmail)
     bike.isAvailable = false
-    const newRent = new Rent(bike, user, new Date()) 
-    this.rents.push(newRent)
-
-    return newRent
+    await this.bikeRepo.update(bikeId, bike)
+    const newRent = new Rent(bike, user, new Date())
+    return await this.rentRepo.add(newRent)
   }
   
-  returnBike(bikeId: string | undefined, userEmail: string): Number{ //TEST DONE
+  async returnBike(bikeId: string, userEmail: string): Promise<number> {
     const now = new Date()
-        const rent = this.rents.find(rent => rent.bike.id === bikeId && rent.user.email === userEmail && !rent.end)
-        if (!rent) throw new RentDoesNotExist()
-        rent.end = now
-        rent.bike.isAvailable = true
-        const hours = diffHours(rent.end, rent.start)
-        return hours * rent.bike.rate
-  }
+    const rent = await this.rentRepo.findOpen(bikeId, userEmail)
+    if (!rent.id) throw new RentDoesNotExist()
+    if(!rent.bike.id) throw new BikeNotFoundError()
+    rent.end = now
+    await this.rentRepo.update(rent.id, rent)
+    rent.bike.isAvailable = true
+    await this.bikeRepo.update(rent.bike.id, rent.bike)
+    const hours = diffHours(rent.end, rent.start)
+    return hours * rent.bike.rate
+} 
 
-  removeUser(email: String): void { //TEST DONE
-    let iU = this.users.findIndex(u => u.email === email)
-    if(iU == -1)
-      throw new EmailDoesNotExist()
-    
-    this.users.splice(iU, 1)
+  async removeUser(email: string): Promise<void> {
+    await this.findUser(email)
+    await this.userRepo.remove(email)
   }
   
-  registerBike(bike: Bike): string { // TEST DONE
-    const bikeExists = this.bikes.some(b => bike === b)
-      if(bikeExists) throw new BikeAlreadyExists()
-      
-    const newId = crypto.randomUUID()
-    bike.id = newId
-    this.bikes.push(bike)
-    return newId
+  async registerBike(bike: Bike): Promise<string> {
+    return await this.bikeRepo.add(bike)
   }
 
-  findUserByEmail(userEmail: string): User { // TEST DONE
-    const user = this.users.find(u => u.email === userEmail)
-    if(!user) throw new UserNotFoundError()
-    
-    return user
+    async findUser(email: string): Promise<User> {
+      const user = await this.userRepo.find(email)
+      if (!user) throw new UserNotFoundError()
+      return user
   }
   
-  findBikeById(bikeId: String): Bike { // TEST DONE
-    const bike = this.bikes.find(b => b.id === bikeId)
-    if(!bike) throw new BikeNotFoundError()
-    
+  async findBike(bikeId: string): Promise<Bike> {
+    const bike = await this.bikeRepo.find(bikeId)
+    if (!bike) throw new BikeNotFoundError()
     return bike
   }
 
-  moveBikeTo(bikeId: string, location: Location): Location { //TEST DONE
-    const bike = this.findBikeById(bikeId)
-    
+  async moveBikeTo(bikeId: string, location: Location) {
+    const bike = await this.findBike(bikeId)
     bike.position.latitude = location.latitude
     bike.position.longitude = location.longitude
-
-    return bike.position
-  }
+    await this.bikeRepo.update(bikeId, bike)
+}
 }
 
 function diffHours(dt2: Date, dt1: Date) {

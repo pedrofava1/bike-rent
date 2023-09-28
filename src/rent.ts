@@ -7,6 +7,7 @@ export class Rent {
   constructor(
     public bike: Bike,
     public user: User,
-    public start: Date
+    public start: Date,
+    public id?: string
   ) {}
 }
