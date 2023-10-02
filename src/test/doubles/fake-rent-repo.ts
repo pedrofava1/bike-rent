@@ -1,6 +1,6 @@
-import { RentDoesNotExist } from "../../errors/RentDoesNotExist";
-import { RentRepo } from "../../ports/rent-repo";
-import { Rent } from "../../rent";
+import { RentNotFoundError } from "../../errors/RentNotFoundError"
+import { RentRepo } from "../../ports/rent-repo"
+import { Rent } from "../../rent"
 import crypto from 'crypto'
 
 export class FakeRentRepo implements RentRepo {
@@ -15,7 +15,7 @@ export class FakeRentRepo implements RentRepo {
 
     async findOpen(bikeId: string, userEmail: string): Promise<Rent> {
         const rent = this.rents.find(rent => rent.bike.id === bikeId && rent.user.email === userEmail &&!rent.end)
-        if(!rent) throw new RentDoesNotExist()
+        if(!rent) throw new RentNotFoundError()
         return rent
     }
 

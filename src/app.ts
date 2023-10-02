@@ -2,16 +2,14 @@ import { User } from "./user";
 import { Bike } from "./bike";
 import { Rent } from "./rent";
 import { Location } from "./location";
-
-import crypto from 'crypto'
-import bcrypt from 'bcrypt'
+import { Crypt } from "./crypt";
 
 import { BikeNotFoundError } from "./errors/BikeNotFoundError";
 import { UnavailableBikeError } from "./errors/UnavailableBikeError";
 import { UserNotFoundError } from "./errors/UserNotFoundError";
 import { UserAlreadyExists } from "./errors/UserAlreadyExists";
 import { AuthenticationFailed } from "./errors/AuthenticationFailed";
-import { RentDoesNotExist } from "./errors/RentDoesNotExist";
+import { RentNotFoundError } from "./errors/RentNotFoundError";
 import { EmailDoesNotExist } from "./errors/EmailDoesNotExist";
 import { BikeAlreadyExists } from "./errors/BikeAlreadyExists";
 import { UserRepo } from "./ports/user-repo";
@@ -19,12 +17,12 @@ import { BikeRepo } from "./ports/bike-repo";
 import { RentRepo } from "./ports/rent-repo";
 
 export class App {
-  crypt: any;
+  crypt: Crypt = new Crypt()
   constructor(
     readonly userRepo: UserRepo,
     readonly bikeRepo: BikeRepo,
     readonly rentRepo: RentRepo
-) {}
+  ) {}
 
   async listUsers(): Promise<User[]> {
     return await this.userRepo.list()
@@ -63,8 +61,10 @@ export class App {
   async returnBike(bikeId: string, userEmail: string): Promise<number> {
     const now = new Date()
     const rent = await this.rentRepo.findOpen(bikeId, userEmail)
-    if (!rent.id) throw new RentDoesNotExist()
+
+    if (!rent.id) throw new RentNotFoundError()
     if(!rent.bike.id) throw new BikeNotFoundError()
+    
     rent.end = now
     await this.rentRepo.update(rent.id, rent)
     rent.bike.isAvailable = true
@@ -82,10 +82,10 @@ export class App {
     return await this.bikeRepo.add(bike)
   }
 
-    async findUser(email: string): Promise<User> {
-      const user = await this.userRepo.find(email)
-      if (!user) throw new UserNotFoundError()
-      return user
+  async findUser(email: string): Promise<User> {
+    const user = await this.userRepo.find(email)
+    if (!user) throw new UserNotFoundError()
+    return user
   }
   
   async findBike(bikeId: string): Promise<Bike> {
@@ -99,7 +99,7 @@ export class App {
     bike.position.latitude = location.latitude
     bike.position.longitude = location.longitude
     await this.bikeRepo.update(bikeId, bike)
-}
+  }
 }
 
 function diffHours(dt2: Date, dt1: Date) {

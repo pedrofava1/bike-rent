@@ -2,38 +2,61 @@ import { App } from "../app"
 import { User } from "../user"
 import { Bike } from "../bike"
 import { Location } from "../location"
-import { InMemoryUserRepository } from "../test/doubles/in-memory-user-repository"
-import { InMemoryBikeRepository } from "../test/doubles/in-memory-bike-repository"
 
+import { UserRepo } from "../ports/user-repo"
+import { BikeRepo } from "../ports/bike-repo"
+import { RentRepo } from "../ports/rent-repo"
+import { FakeUserRepo } from "./doubles/fake-user-repo"
+import { FakeBikeRepo } from "./doubles/fake-bike-repo"
+import { FakeRentRepo } from "./doubles/fake-rent-repo"
+
+import { RentNotFoundError } from "../errors/RentNotFoundError"
 import { BikeNotFoundError } from "../errors/BikeNotFoundError"
 import { UnavailableBikeError } from "../errors/UnavailableBikeError"
 import { AuthenticationFailed } from "../errors/AuthenticationFailed"
 import { UserNotFoundError } from "../errors/UserNotFoundError"
 import { UserAlreadyExists } from "../errors/UserAlreadyExists"
-import { RentDoesNotExist } from "../errors/RentDoesNotExist"
 import { EmailDoesNotExist } from "../errors/EmailDoesNotExist"
 import { BikeAlreadyExists } from "../errors/BikeAlreadyExists"
 
 import sinon from "sinon"
 
-describe('App', () => {
-    it('should correctly calculate rent amount', async () => {
-        const userRepo = new InMemoryUserRepository()
-        const bikeRepo = new InMemoryBikeRepository()
-        const rentRepo = new InMemoryRentRepository()
+let userRepo: UserRepo
+let bikeRepo: BikeRepo
+let rentRepo: RentRepo
 
+describe('App', () => {
+    beforeEach( () => {
+        userRepo = new FakeUserRepo()
+        bikeRepo = new FakeBikeRepo()
+        rentRepo = new FakeRentRepo()
+    })
+
+    it('should throw rent does not exist error when trying to return a bike that was not rented', async () => {
         const app = new App(userRepo, bikeRepo, rentRepo)
+        const bike = new Bike('bikel', 'bmx', 30, 100, 100.0, 'my desc', 5, [])
+        await app.registerBike(bike)
         const user = new User('Pedro', 'pedro@mail.com', '1234')
         await app.registerUser(user)
-        const bike = new Bike('bikel', 'bmx', 30, 100, 100.0, 'my desc', 5, [], '1')
-        app.registerBike(bike)
-        const clock = sinon.useFakeTimers()
-        app.rentBike(bike.id, user.email)
-        const hour = 1000 * 60 * 60;
-        clock.tick(2 * hour)
-        const rentAmount = app.returnBike(bike.id, user.email)
-        expect(rentAmount).toEqual(200.0)
+        if(!bike.id) throw BikeNotFoundError
+    
+        await expect(() => app.returnBike('fake-id', "pedro@mail.com")).rejects.toThrow(RentNotFoundError)
     })
+
+    // it('should correctly calculate rent amount', async () => {
+        
+        //     const app = new App(userRepo, bikeRepo, rentRepo)
+        //     const user = new User('Pedro', 'pedro@mail.com', '1234')
+    //     await app.registerUser(user)
+    //     const bike = new Bike('bikel', 'bmx', 30, 100, 100.0, 'my desc', 5, [], '1')
+    //     await app.registerBike(bike)
+    //     const clock = sinon.useFakeTimers()
+    //     await app.rentBike(bike.id, user.email)
+    //     const hour = 1000 * 60 * 60;
+    //     clock.tick(2 * hour)
+    //     const rentAmount = app.returnBike(bike.id, user.email)
+    //     expect(rentAmount).toEqual(200.0)
+    // })
 
     // it('should be able to move a bike to a specific location', () => {
     //     const app = new App()
@@ -104,16 +127,6 @@ describe('App', () => {
     //     await expect(() => app.registerUser(user)).rejects.toThrow(UserAlreadyExists)
     // })
 
-    // it('should throw rent does not exist error when trying to return a bike that was not rented', async () => {
-    //     const app = new App()
-    //     const bike = new Bike('bikel', 'bmx', 30, 100, 100.0, 'my desc', 5, [])
-    //     app.registerBike(bike)
-    //     const user = new User('Pedro', 'pedro@mail.com', '1234')
-    //     await app.registerUser(user)
-    //     app.rentBike(bike.id, user.email)
-
-    //     expect(() => app.returnBike('fake-id', user.email)).toThrow(RentDoesNotExist)
-    // })
 
     // it('should throw email does not exist error when trying to remove an user that is not registered', async () => {
     //     const app = new App()

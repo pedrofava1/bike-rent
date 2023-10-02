@@ -6,14 +6,8 @@ import crypto from 'crypto'
 export class FakeUserRepo implements UserRepo {
   users: User[] = []
 
-  async find(email: string): Promise<User>  {
-    const user = this.users.find(user => user.email === email);
-
-    if (user) {
-        return Promise.resolve(user);
-    } 
-      
-    return Promise.reject(new UserNotFoundError());
+  async find(email: string): Promise<User | undefined> {
+    return this.users.find(user => user.email === email)
   }
 
   async add(user: User): Promise<string> {
